@@ -7,9 +7,9 @@ import com.turandot.game.TurandotGame;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-	      config.title = "Drop";
-	      config.width = 800;
-	      config.height = 480;
+	      config.title = "Mantablack";
+	      config.width = 500;
+	      config.height = 690;
 	      new LwjglApplication(new TurandotGame(), config);
 	}
 }

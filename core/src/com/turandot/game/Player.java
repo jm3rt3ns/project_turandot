@@ -12,6 +12,7 @@ public class Player extends Sprite {
 	
 	private float oldx = 0;
 	private float oldy = 0;
+	private String player_color = "black";
 	
 	private TiledMapTileLayer collisionLayer;
 	
@@ -27,35 +28,33 @@ public class Player extends Sprite {
 	    String name = collisionLayer.getName();
 	    Cell cell = collisionLayer.getCell(4, 0);
 	    boolean test = cell.getTile().getProperties().containsKey("blocked");
-	    if(Gdx.input.isKeyPressed(Keys.LEFT) && directionClear("left"))
+	    
+	    //****************
+	    // Handle L/R Movement
+	    //****************
+	    if(Gdx.input.isKeyJustPressed(Keys.LEFT) && directionClear("left"))
     	{
 	    	//setX(oldx -= 500 * Gdx.graphics.getDeltaTime());
 	    	setX(oldx-64);
 	    	//collisionLayer.getCell((int) getX(), (int) getY()).getTile().getProperties().containsKey("blocked");
     	}
-	    if(Gdx.input.isKeyPressed(Keys.RIGHT) && directionClear("right"))
+	    if(Gdx.input.isKeyJustPressed(Keys.RIGHT) && directionClear("right"))
     	{
 	    	//setX(oldx += 500 * Gdx.graphics.getDeltaTime());
 	    	setX((oldx+64));
     	}
-	    
-	    //handle up movement
-    	cell = collisionLayer.getCell((int) (getX()+32)/64, (int) (getY()+64)/64);
-		if(cell!=null)
-    	{
-    	    test = cell.getTile().getProperties().containsKey("blocked");
-    	    System.out.println(test);
-    	    if(test==true)
-    	    {
-    	    	//nothing
-    	    } else
-    	    {
-    	    	setY(oldy += 200 * Gdx.graphics.getDeltaTime());
-    	    }
-    	} else
-    	{
-    		setY(oldy += 200 * Gdx.graphics.getDeltaTime());
-    	}
+		
+		//******************
+		// Handle toggling manta between black and white
+		//******************
+		
+		if(Gdx.input.isKeyJustPressed(Keys.SPACE))
+		{
+			if(player_color.equals("white"))
+				player_color = "black";
+			else
+				player_color = "white";
+		}
 	}
 	
 	private boolean directionClear(String direction)
@@ -70,7 +69,7 @@ public class Player extends Sprite {
 		switch (direction)
 		{
         case "left":
-        	cell = collisionLayer.getCell((int) getX()/64, (int) (getY()+64)/64);
+        	cell = collisionLayer.getCell((int) (getX()-32)/64, (int) (getY()+32)/64);
     		if(cell!=null)
         	{
         	    boolean test = cell.getTile().getProperties().containsKey("blocked");
@@ -88,7 +87,7 @@ public class Player extends Sprite {
         	}
         	break;
         case "right":
-        	cell = collisionLayer.getCell((int) (getX()+64)/64, (int) (getY()+64)/64);
+        	cell = collisionLayer.getCell((int) (getX()+64)/64, (int) (getY()+32)/64);
     		if(cell!=null)
         	{
         	    boolean test = cell.getTile().getProperties().containsKey("blocked");
@@ -110,5 +109,22 @@ public class Player extends Sprite {
         	break;
 		}
 		return clear;
+	}
+	
+	public String getPlayerColor()
+	{
+		return player_color;
+	}
+	
+	public void setPlayerColor(String player_color)
+	{
+		this.player_color = player_color;
+	}
+	
+	private void resetPlayer()
+	{
+		//signal game to restart
+		setX(64*5);
+		setY(300 /2 - 64 / 2);
 	}
 }
