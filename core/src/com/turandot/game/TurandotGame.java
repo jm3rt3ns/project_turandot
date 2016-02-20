@@ -8,7 +8,14 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 
 public class TurandotGame extends ApplicationAdapter
@@ -18,7 +25,7 @@ public class TurandotGame extends ApplicationAdapter
 	
 	//images of player, tiles, colors, and background
 	private Texture playerImage;
-	private Rectangle player;
+	private Player player;
 	
 	private Texture tileImage;
 	private Texture greenImage;
@@ -30,19 +37,11 @@ public class TurandotGame extends ApplicationAdapter
 	private Sound score;
 	private Music music;
 	
-	//screensize and block size
-	private int block_size;
-	private int screen_size;
-	
-	//define the level
-	private short level_data[][] =
-	{
-	        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-	};
-	
-	private Rectangle blocks[][] = new Rectangle[64][64];
+	//tilemap
+	Texture img;
+    TiledMap tiledMap;
+    TiledMapTileLayer collisionLayer;
+    TiledMapRenderer tiledMapRenderer;
 	
 	@Override
 	public void create () {
@@ -69,40 +68,26 @@ public class TurandotGame extends ApplicationAdapter
 		//setup spritebatch
 		batch = new SpriteBatch();
 		
+		float w = Gdx.graphics.getWidth();
+        float h = Gdx.graphics.getHeight();
+
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false,w,h);
+        camera.update();
+        tiledMap = new TmxMapLoader().load("map1.tmx");
+        collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
+        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        //Gdx.input.setInputProcessor(this);
+        
 		//setup player initial settings
-		player = new Rectangle();
-		player.x = 20;
-		player.y = 300 /2 - 64 / 2;
-		player.width = 64;
-		player.height = 64;
-		   
-		//create the maze
-		createMaze();
-		
+		player = new Player(new Sprite(), collisionLayer);
+		player.setX(64*5);
+		player.setY(300 /2 - 64 / 2);
 	}
 
 	@Override
 	public void render () {
-		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
-	    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-	    camera.update();
-	    
-	    batch.setProjectionMatrix(camera.combined);
-	    batch.begin();
-	    batch.draw(playerImage, player.x, player.y);
-	    drawMaze();
-	    batch.end();
-	    
-	    if(Gdx.input.isKeyPressed(Keys.LEFT))
-    	{
-	    	player.x -= 200 * Gdx.graphics.getDeltaTime();
-	    	// camera.position.x += 5;
-	    	camera.update();
-	    	batch.setProjectionMatrix(camera.combined);
-    	}
-	    if(Gdx.input.isKeyPressed(Keys.RIGHT)) player.x += 200 * Gdx.graphics.getDeltaTime();
-	    if(Gdx.input.isKeyPressed(Keys.UP)) player.y += 200 * Gdx.graphics.getDeltaTime();
-	    if(Gdx.input.isKeyPressed(Keys.DOWN)) player.y -= 200 * Gdx.graphics.getDeltaTime();
+		Update();
 	}
 	
 	@Override
@@ -119,33 +104,29 @@ public class TurandotGame extends ApplicationAdapter
 	    batch.dispose();
     }
 	
-	private void createMaze()
+	//update method
+	public void Update()
 	{
-        int i = 0;
-        int j = 0;
-
-        for (i = 0; i < 8; i ++) {
-            for (j = 0; j < 3; j ++)
-            {
-            	blocks[i][j] = new Rectangle();
-            	blocks[i][j].x = i*64;
-            	blocks[i][j].y = j*64;
-            	blocks[i][j].width = 64;
-            	blocks[i][j].height = 64;
-            }
-        }
-    }
-	
-	private void drawMaze()
-	{
-
-        int i = 0;
-        int j = 0;
-
-        for (i = 0; i < 8; i ++) {
-            for (j = 0; j < 3; j ++) {
-            	batch.draw(tileImage, blocks[i][j].x, blocks[i][j].y);
-            }
-        }
-    }
+		//draw the map
+		Gdx.gl.glClearColor(1, 0, 0, 1);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        camera.update();
+        tiledMapRenderer.setView(camera);
+        tiledMapRenderer.render();
+	    
+        //draw the player
+	    batch.setProjectionMatrix(camera.combined);
+	    batch.begin();
+	    batch.draw(playerImage, player.getX(), player.getY());
+	    batch.end();
+	    
+	    //handle player movement
+	    player.update();
+	    camera.update();
+	    
+	    camera.position.set(player.getX(), player.getY(), 0);
+	    camera.update();
+    	batch.setProjectionMatrix(camera.combined);
+	}
 }
