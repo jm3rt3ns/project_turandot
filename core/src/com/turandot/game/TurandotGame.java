@@ -24,6 +24,8 @@ import com.badlogic.gdx.math.Vector3;
 public class TurandotGame extends ApplicationAdapter
 {
 	private int gameState = 0;
+	private int level = 0;
+	
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
 	
@@ -66,9 +68,9 @@ public class TurandotGame extends ApplicationAdapter
 		// load the images for the droplet and the bucket, 64x64 pixels each
 		manta_white = new Texture(Gdx.files.internal("manta_white.png"));
 		manta_black = new Texture(Gdx.files.internal("manta_black.png"));
-		tileImage = new Texture(Gdx.files.internal("block.png"));
-		whiteImage = new Texture(Gdx.files.internal("white.png"));
-		blackImage = new Texture(Gdx.files.internal("black.png"));
+//		tileImage = new Texture(Gdx.files.internal("block.png"));
+//		whiteImage = new Texture(Gdx.files.internal("white.png"));
+//		blackImage = new Texture(Gdx.files.internal("black.png"));
 		
 		// load the drop sound effect and the rain background "music"
 		//damage = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -91,15 +93,9 @@ public class TurandotGame extends ApplicationAdapter
         camera = new OrthographicCamera();
         camera.setToOrtho(false,w,h);
         camera.update();
-        tiledMap = new TmxMapLoader().load("map1.tmx");
-        collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
-        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
-        //Gdx.input.setInputProcessor(this);
         
-		//setup player initial settings
-		player = new Player(new Sprite(), collisionLayer);
-		player.setX(64*5);
-		player.setY(300 /2 - 64 / 2);
+        loadMap();
+        //Gdx.input.setInputProcessor(this);
 	}
 
 	@Override
@@ -123,7 +119,9 @@ public class TurandotGame extends ApplicationAdapter
 		}
 		else if (gameState==-1)
 		{
+			
 			//countdown until game begins
+			resetGame();
 			preGame();
 		}
 	}
@@ -198,6 +196,8 @@ public class TurandotGame extends ApplicationAdapter
     	    if(test==true)
     	    {
     	    	gameState = 2;
+    	    	level++;
+    	    	System.out.println(level);
     	    }
     	} else
     	{
@@ -227,7 +227,8 @@ public class TurandotGame extends ApplicationAdapter
 	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
 	    {
 	    	//restart game
-	    	resetGame();
+	    	old_time = System.currentTimeMillis();
+	    	gameState = -1;
 	    }
 	}
 	
@@ -238,7 +239,8 @@ public class TurandotGame extends ApplicationAdapter
 	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
 	    {
 	    	//restart game
-	    	resetGame();
+	    	old_time = System.currentTimeMillis();
+	    	gameState = -1;
 	    }
 	}
 	
@@ -275,10 +277,10 @@ public class TurandotGame extends ApplicationAdapter
 //			    camera.update();
 //		    	batch.setProjectionMatrix(camera.combined);
 		    	
-		
+		resetGame();
 		drawGame();
 		    	new_time = System.currentTimeMillis();
-		    	if((new_time-old_time)>5000)
+		    	if((new_time-old_time)>2000)
 		    	{
 		    		gameState = 1;
 		    	}
@@ -286,7 +288,7 @@ public class TurandotGame extends ApplicationAdapter
 	
 	public void resetGame()
 	{
-		gameState = 1;
+		loadMap();
 		player.setX(64*5);
 		background_y = 0;
 		player.setY(300 /2 - 64 / 2);
@@ -302,7 +304,7 @@ public class TurandotGame extends ApplicationAdapter
 	public void renderImage(String imageName)
 	{
 		image = new Texture(Gdx.files.internal(imageName));
-		Gdx.gl.glClearColor(1, 0, 0, 1);
+		Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         camera.update();
@@ -316,7 +318,7 @@ public class TurandotGame extends ApplicationAdapter
 	{
 		camera.position.set(64*7, player.getY()+300, 0);
 		//draw the map
-		Gdx.gl.glClearColor(1, 0, 0, 1);
+		Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
@@ -347,5 +349,24 @@ public class TurandotGame extends ApplicationAdapter
 	  //handle player movement
 	    player.update();
 	    camera.update();
+	}
+	
+	public void loadMap()
+	{
+		if(level==0)
+		{
+			tiledMap = new TmxMapLoader().load("map1.tmx");
+		}
+		else if(level==1)
+		{
+			tiledMap = new TmxMapLoader().load("map2.tmx");
+		}
+        collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
+        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        
+      //setup player initial settings
+	player = new Player(new Sprite(), collisionLayer);
+	player.setX(64*5);
+	player.setY(300 /2 - 64 / 2);
 	}
 }
