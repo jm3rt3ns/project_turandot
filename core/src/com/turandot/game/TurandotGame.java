@@ -9,8 +9,11 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureWrap;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Animation.PlayMode;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -23,7 +26,7 @@ import com.badlogic.gdx.math.Vector3;
 
 public class TurandotGame extends ApplicationAdapter
 {
-	private int gameState = 0;
+	private int gameState = -2;
 	private int level = 0;
 	
 	private OrthographicCamera camera;
@@ -33,6 +36,16 @@ public class TurandotGame extends ApplicationAdapter
 	private Texture manta_white;
 	private Texture manta_black;
 	private Player player;
+	
+	//explosion
+	private static final int frame_cols = 2;
+    private static final int frame_rows = 2;
+    private static float frame_duration = .1f;
+    private Animation explosion;
+    private Texture explosionSheet;
+    private TextureRegion[] explosionFrames;
+    private TextureRegion currentFrame;
+    float stateTime;
 	
 	private Texture image;
 	private Texture tileImage;
@@ -55,13 +68,26 @@ public class TurandotGame extends ApplicationAdapter
     TiledMap tiledMap;
     TiledMapTileLayer collisionLayer;
     TiledMapRenderer tiledMapRenderer;
-	
+    
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		
+		//setup explosion animation
+		explosionSheet = new Texture(Gdx.files.internal("explosion.png")); // #9
+        TextureRegion[][] tmp = TextureRegion.split(explosionSheet, explosionSheet.getWidth()/frame_cols, explosionSheet.getHeight()/frame_rows);              // #10
+        explosionFrames = new TextureRegion[frame_cols * frame_rows];
+        int index = 0;
+        for (int i = 0; i < frame_rows; i++) {
+            for (int j = 0; j < frame_cols; j++) {
+                explosionFrames[index++] = tmp[i][j];
+            }
+        }
+        explosion = new Animation(0.24f, explosionFrames);
+        stateTime = 0f;
+		
 		//create the background image
-		backgroundImage = new Texture(Gdx.files.internal("background.png"));
+		backgroundImage = new Texture(Gdx.files.internal("background_1a.png"));
 		backgroundImage.setWrap(TextureWrap.Repeat, TextureWrap.Repeat);
 		
 		//Gdx.app.log("AssetPath", Gdx.files.internal("dot.png").file().getAbsolutePath());
@@ -119,10 +145,11 @@ public class TurandotGame extends ApplicationAdapter
 		}
 		else if (gameState==-1)
 		{
-			
 			//countdown until game begins
-			resetGame();
 			preGame();
+		} else if(gameState==-2)
+		{
+			storyScreen();
 		}
 	}
 	
@@ -130,12 +157,7 @@ public class TurandotGame extends ApplicationAdapter
 	public void dispose()
 	{
 	    manta_white.dispose();
-	    tileImage.dispose();
-	    whiteImage.dispose();
-	    blackImage.dispose();
-	    //backgroundImage.dispose();
-	    //score.dispose();
-	    //damage.dispose();
+	    manta_black.dispose();
 	    music.dispose();
 	    batch.dispose();
     }
@@ -144,7 +166,7 @@ public class TurandotGame extends ApplicationAdapter
 	public void Update()
 	{
 		drawGame();
-	    
+	    drawPlayer();
 	    movePlayer();
 	    camera.update();
 	}
@@ -154,7 +176,7 @@ public class TurandotGame extends ApplicationAdapter
 		//*******************
 	    // Handle up movement + collisions
 	    //*******************
-    	Cell cell = collisionLayer.getCell((int) (player.getX()+32)/64, (int) (player.getY()+64)/64);
+    	Cell cell = collisionLayer.getCell((int) (player.getX()+32)/64, (int) (player.getY()+50)/64);
 	    float oldy = player.getY();
 		if(cell!=null)
     	{
@@ -218,12 +240,24 @@ public class TurandotGame extends ApplicationAdapter
 	    }
 	}
 	
+	public void storyScreen()
+	{
+		renderImage("explosion.png");
+	    
+	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
+	    {
+	    	//restart game
+	    	old_time = System.currentTimeMillis();
+	    	gameState = 0;
+	    }
+	}
+	
 	public void gameOver()
 	{
+		drawGame();
+		overlayImage("deathscreen.png");
 		deathAnimation();
-		
-		renderImage("deathscreen.png");
-	    
+
 	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
 	    {
 	    	//restart game
@@ -234,7 +268,9 @@ public class TurandotGame extends ApplicationAdapter
 	
 	public void Victory()
 	{
-		renderImage("victorysplash.png");
+		drawGame();
+		overlayImage("victory_splash.png");
+		System.out.println("Chezinu is the best");		
 	    
 	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
 	    {
@@ -278,12 +314,22 @@ public class TurandotGame extends ApplicationAdapter
 //		    	batch.setProjectionMatrix(camera.combined);
 		    	
 		resetGame();
+		camera.update();
 		drawGame();
-		    	new_time = System.currentTimeMillis();
-		    	if((new_time-old_time)>2000)
-		    	{
-		    		gameState = 1;
-		    	}
+		drawPlayer();
+    	new_time = System.currentTimeMillis();
+    	if((new_time-old_time)<750)
+    	{
+    		overlayImage("ready.png");
+    	} else if((750 <= (new_time-old_time)) && (new_time-old_time) <= 1500)
+    	{
+    		overlayImage("go.png");
+    	}
+    	
+    	if((new_time-old_time)>1500)
+    	{
+    		gameState = 1;
+    	}
 	}
 	
 	public void resetGame()
@@ -293,11 +339,17 @@ public class TurandotGame extends ApplicationAdapter
 		background_y = 0;
 		player.setY(300 /2 - 64 / 2);
 		player.setPlayerColor("black");
+		camera.position.set(64*7, player.getY()+300, 0);
 	}
 	
 	public void deathAnimation()
 	{
-		
+        stateTime += Gdx.graphics.getDeltaTime();
+        currentFrame = explosion.getKeyFrame(stateTime, false);
+        batch.begin();
+        batch.draw(currentFrame, player.getX()-32, player.getY()-32);
+        batch.end();
+        camera.update();
 	}
 	
 	//helper functions
@@ -312,6 +364,17 @@ public class TurandotGame extends ApplicationAdapter
 	    batch.draw(image, camera.position.x-image.getWidth()/2, camera.position.y-image.getHeight()/2);
 	    batch.end();
 	    camera.update();
+	    image.dispose();
+	}
+	
+	public void overlayImage(String imageName)
+	{
+		image = new Texture(Gdx.files.internal(imageName));
+		batch.begin();
+	    batch.draw(image, camera.position.x-image.getWidth()/2, camera.position.y-image.getHeight()/2);
+	    batch.end();
+	    camera.update();
+	    image.dispose();
 	}
 	
 	public void drawGame()
@@ -322,18 +385,48 @@ public class TurandotGame extends ApplicationAdapter
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
-        int tileCount = 5; 
+        int tileCount = 20; 
         batch.draw(backgroundImage, (64*7)-250, background_y,
              backgroundImage.getWidth() * tileCount, 
              backgroundImage.getHeight() * tileCount, 
              0, tileCount, 
              tileCount, 0);
         batch.end();
-        //camera.update();
+        camera.update();
         tiledMapRenderer.setView(camera);
         tiledMapRenderer.render();
 	    
-        //draw the player
+        
+	    
+	  //handle player movement
+	    player.update();
+	    camera.update();
+	}
+	
+	public void loadMap()
+	{
+		if(level==0)
+		{
+			tiledMap = new TmxMapLoader().load("level_one.tmx");
+		}
+		else if(level==1)
+		{
+			tiledMap = new TmxMapLoader().load("map2.tmx");
+		}
+        collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
+        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        
+        //setup player initial settings
+		player = new Player(new Sprite(), collisionLayer);
+		player.setX(64*5);
+		player.setY(300 /2 - 64 / 2);
+		player.setPlayerColor("black");
+		//camera.position.set(64*7, player.getY()+300, 0);
+	}
+	
+	public void drawPlayer()
+	{
+		//draw the player
         batch.begin();
 	    batch.setProjectionMatrix(camera.combined);
 	    if(player.getPlayerColor().equals("white"))
@@ -345,28 +438,6 @@ public class TurandotGame extends ApplicationAdapter
 	    	batch.draw(manta_black, player.getX(), player.getY());
 	    }
 	    batch.end();
-	    
-	  //handle player movement
-	    player.update();
 	    camera.update();
-	}
-	
-	public void loadMap()
-	{
-		if(level==0)
-		{
-			tiledMap = new TmxMapLoader().load("map1.tmx");
-		}
-		else if(level==1)
-		{
-			tiledMap = new TmxMapLoader().load("map2.tmx");
-		}
-        collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
-        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
-        
-      //setup player initial settings
-	player = new Player(new Sprite(), collisionLayer);
-	player.setX(64*5);
-	player.setY(300 /2 - 64 / 2);
 	}
 }
