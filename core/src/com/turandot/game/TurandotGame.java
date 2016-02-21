@@ -73,6 +73,10 @@ public class TurandotGame extends ApplicationAdapter
 	public void create () {
 		batch = new SpriteBatch();
 		
+		//setup sound effects
+		damage = Gdx.audio.newSound(Gdx.files.internal("SFX/Explode.mp3"));
+		score = Gdx.audio.newSound(Gdx.files.internal("SFX/Swoop.mp3"));
+		
 		//setup explosion animation
 		explosionSheet = new Texture(Gdx.files.internal("explosion.png")); // #9
         TextureRegion[][] tmp = TextureRegion.split(explosionSheet, explosionSheet.getWidth()/frame_cols, explosionSheet.getHeight()/frame_rows);              // #10
@@ -87,7 +91,16 @@ public class TurandotGame extends ApplicationAdapter
         stateTime = 0f;
 		
 		//create the background image
-		backgroundImage = new Texture(Gdx.files.internal("background_1a.png"));
+        if(level==0)
+        {
+        	backgroundImage = new Texture(Gdx.files.internal("01_background_1a.png"));
+        } else if (level==1)
+        {
+        	backgroundImage = new Texture(Gdx.files.internal("02_background_1a.png"));
+        } else
+        {
+        	backgroundImage = new Texture(Gdx.files.internal("03_background_1a.png"));
+        }
 		backgroundImage.setWrap(TextureWrap.Repeat, TextureWrap.Repeat);
 		
 		//Gdx.app.log("AssetPath", Gdx.files.internal("dot.png").file().getAbsolutePath());
@@ -104,6 +117,7 @@ public class TurandotGame extends ApplicationAdapter
 
 		// start the playback of the background music immediately
 		music.setLooping(true);
+		music.setVolume(0.3f);
 		music.play();
 		
 		//setup the camera
@@ -137,7 +151,14 @@ public class TurandotGame extends ApplicationAdapter
 		}
 		else if(gameState==2)
 		{
-			Victory();
+			if(level==3)
+			{
+				victoryScreen();
+			}
+			else
+			{
+				levelComplete();
+			}
 		}
 		else if (gameState==3)
 		{
@@ -146,6 +167,7 @@ public class TurandotGame extends ApplicationAdapter
 		else if (gameState==-1)
 		{
 			//countdown until game begins
+			resetGame();
 			preGame();
 		} else if(gameState==-2)
 		{
@@ -195,11 +217,15 @@ public class TurandotGame extends ApplicationAdapter
     	    test = cell.getTile().getProperties().containsKey("white");
     	    if(test==true)
     	    {
-    	    	System.out.println("found white");
     	    	//check to see the player color
     	    	if(player.getPlayerColor().equals("white")!=true)
     	    	{
+    	    		damage.play();
     	    		gameState = 3;
+    	    	}
+    	    	else
+    	    	{
+    	    		score.play();
     	    	}
     	    }
     	    
@@ -211,7 +237,12 @@ public class TurandotGame extends ApplicationAdapter
     	    	//check to see the player color
     	    	if(player.getPlayerColor().equals("black")!=true)
     	    	{
+    	    		damage.play();
     	    		gameState = 3;
+    	    	}
+    	    	else
+    	    	{
+    	    		score.play();
     	    	}
     	    }
     	    test = cell.getTile().getProperties().containsKey("finish_line");
@@ -242,7 +273,7 @@ public class TurandotGame extends ApplicationAdapter
 	
 	public void storyScreen()
 	{
-		renderImage("explosion.png");
+		renderImage("Intro.png");
 	    
 	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
 	    {
@@ -266,7 +297,7 @@ public class TurandotGame extends ApplicationAdapter
 	    }
 	}
 	
-	public void Victory()
+	public void levelComplete()
 	{
 		drawGame();
 		overlayImage("victory_splash.png");
@@ -277,6 +308,19 @@ public class TurandotGame extends ApplicationAdapter
 	    	//restart game
 	    	old_time = System.currentTimeMillis();
 	    	gameState = -1;
+	    }
+	}
+	
+	public void victoryScreen()
+	{
+		renderImage("Victory.png");
+	    
+	    if(Gdx.input.isKeyJustPressed(Keys.SPACE)==true)
+	    {
+	    	//restart game
+	    	old_time = System.currentTimeMillis();
+	    	gameState = 0;
+	    	level = 0;
 	    }
 	}
 	
@@ -313,7 +357,6 @@ public class TurandotGame extends ApplicationAdapter
 //			    camera.update();
 //		    	batch.setProjectionMatrix(camera.combined);
 		    	
-		resetGame();
 		camera.update();
 		drawGame();
 		drawPlayer();
@@ -340,6 +383,7 @@ public class TurandotGame extends ApplicationAdapter
 		player.setY(300 /2 - 64 / 2);
 		player.setPlayerColor("black");
 		camera.position.set(64*7, player.getY()+300, 0);
+		stateTime = 0f;
 	}
 	
 	public void deathAnimation()
@@ -407,11 +451,15 @@ public class TurandotGame extends ApplicationAdapter
 	{
 		if(level==0)
 		{
-			tiledMap = new TmxMapLoader().load("level_one.tmx");
+			tiledMap = new TmxMapLoader().load("level1.tmx");
 		}
 		else if(level==1)
 		{
-			tiledMap = new TmxMapLoader().load("map2.tmx");
+			tiledMap = new TmxMapLoader().load("level2.tmx");
+		}
+		else if(level==2)
+		{
+			tiledMap = new TmxMapLoader().load("level3.tmx");
 		}
         collisionLayer = (TiledMapTileLayer) tiledMap.getLayers().get(0);
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
