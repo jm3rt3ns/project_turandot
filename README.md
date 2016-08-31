@@ -8,7 +8,7 @@ Jack Mertens
 
 Our entry in the 2016 Louisiana Tech Game Jam.
 
-View demo on YouTube:
+## Demo
 
 [https://www.youtube.com/watch?v=zFNrqqx4nXE](https://www.youtube.com/watch?v=zFNrqqx4nXE)
 
