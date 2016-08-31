@@ -1,7 +1,10 @@
 # Mantablack
 
-Graphic Design: [Tanner Ponder](http://www.tannerponder.com)
-Programming: Jack Mertens
+### Graphic Design
+[Tanner Ponder](http://www.tannerponder.com)
+
+### Programming
+Jack Mertens
 
 Our entry in the 2016 Louisiana Tech Game Jam.
 
